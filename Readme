@@ -1,0 +1,117 @@
+class MyView: UIView {
+    
+    var button : UIButton = {
+        let btn = UIButton(frame: CGRect(origin: .zero, size: CGSize(width: 100, height: 50)))
+        btn.backgroundColor = UIColor.orange
+        btn.setTitle("click", for: .normal)
+        btn.addTarget(self, action: #selector(btnClicked), for: .touchUpInside)
+        return btn
+    }()
+    
+    var touchViews : [UIImageView] = [UIImageView]() {
+        didSet{
+            
+        }
+    }
+    
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        
+        let imageView = UIImageView(image: UIImage(named: "touch"))
+        imageView.bounds = CGRect(origin: .zero, size: CGSize(width: 150, height: 150))
+        imageView.tintColor = .white
+        touchViews.append(imageView)
+        self.addSubview(imageView)
+        
+        if let touch = touches.first {
+            imageView.center = touch.location(in: self)
+        }
+        
+        animateRotate(viw: imageView)
+        animateZoom(viw: imageView)
+      
+    }
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesMoved(touches, with: event)
+
+       removeView( touches)
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+       removeView( touches)
+    }
+    
+    
+    func removeView(_ touches:Set<UITouch>) {
+        if let touch = touches.first {
+            
+            let location = touch.location(in: self)
+            if let viw = touchViews.filter({ $0.center.x < location.x + 10 && $0.center.x > location.x - 10 || $0.center.y < location.y + 10 && $0.center.y > location.y - 10 }).first,
+                let index = touchViews.index(of: viw) {
+                touchViews.remove(at: index)
+                
+                UIView.animate(withDuration: 0.3, animations: {
+                    viw.alpha = 0
+                }) { (true) in
+                    viw.removeFromSuperview()
+                }
+            }
+        }
+    }
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        addButton()
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        addButton()
+    }
+    
+    func addButton () {
+        addSubview(button)
+    }
+    
+    @objc func btnClicked() {
+            for (index,viw) in self.touchViews.enumerated() {
+                UIView.animate(withDuration: 0.3, delay: TimeInterval(CGFloat(index) * 0.3), options: [], animations: {
+                    viw.backgroundColor = .yellow
+                }, completion: { (true) in
+                    UIView.animate(withDuration: 0.3, animations: {
+                        viw.backgroundColor = .red
+                    })
+                    
+                })
+            }
+    }
+    
+    func animateRotate(viw: UIView) {
+        let rotate = UIViewPropertyAnimator(duration: 2, curve: .linear)
+        
+        rotate.addAnimations {
+            let rotateTransform = CGAffineTransform(rotationAngle: .pi)
+            viw.transform = viw.transform.concatenating(rotateTransform)
+        }
+        rotate.addCompletion { (_) in
+            self.animateRotate(viw: viw)
+        }
+        rotate.startAnimation()
+    }
+    
+    func animateZoom(viw: UIView) {
+        let zoom = UIViewPropertyAnimator(duration: 2, curve: .easeInOut)
+        
+        zoom.addAnimations {
+            let zoomTransform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+            viw.transform = viw.transform.concatenating(zoomTransform)
+        }
+        zoom.addCompletion { (_) in
+            self.animateRotate(viw: viw)
+        }
+        zoom.startAnimation()
+    }
+   
+}
